@@ -7,7 +7,7 @@ import { isZeroAddress } from "~~/utils/scaffold-eth/common";
 import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 
 type PageProps = {
-  params: Promise<{ address: string }>;
+  params: { address: string };
 };
 
 async function fetchByteCodeAndAssembly(buildInfoDirectory: string, contractPath: string) {
@@ -82,8 +82,7 @@ export function generateStaticParams() {
   return [{ address: "0x0000000000000000000000000000000000000000" }];
 }
 
-const AddressPage = async (props: PageProps) => {
-  const params = await props.params;
+const AddressPage = async ({ params }: PageProps) => {
   const address = params?.address as string;
 
   if (isZeroAddress(address)) return null;

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { InheritanceTooltip } from "./InheritanceTooltip";
 import { Abi, AbiFunction } from "abitype";
 import { Address, TransactionReceipt } from "viem";
-import { useAccount, useConfig, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import {
   ContractInput,
   TxReceipt,
@@ -16,7 +16,6 @@ import {
 import { IntegerInput } from "~~/components/scaffold-eth";
 import { useTransactor } from "~~/hooks/scaffold-eth";
 import { useTargetNetwork } from "~~/hooks/scaffold-eth/useTargetNetwork";
-import { simulateContractWriteAndNotifyError } from "~~/utils/scaffold-eth/contract";
 
 type WriteOnlyFunctionFormProps = {
   abi: Abi;
@@ -34,7 +33,7 @@ export const WriteOnlyFunctionForm = ({
   inheritedFrom,
 }: WriteOnlyFunctionFormProps) => {
   const [form, setForm] = useState<Record<string, any>>(() => getInitialFormState(abiFunction));
-  const [txValue, setTxValue] = useState<string>("");
+  const [txValue, setTxValue] = useState<string | bigint>("");
   const { chain } = useAccount();
   const writeTxn = useTransactor();
   const { targetNetwork } = useTargetNetwork();
@@ -42,21 +41,17 @@ export const WriteOnlyFunctionForm = ({
 
   const { data: result, isPending, writeContractAsync } = useWriteContract();
 
-  const wagmiConfig = useConfig();
-
   const handleWrite = async () => {
     if (writeContractAsync) {
       try {
-        const writeContractObj = {
-          address: contractAddress,
-          functionName: abiFunction.name,
-          abi: abi,
-          args: getParsedContractFunctionArgs(form),
-          value: BigInt(txValue),
-        };
-        await simulateContractWriteAndNotifyError({ wagmiConfig, writeContractParams: writeContractObj });
-
-        const makeWriteWithParams = () => writeContractAsync(writeContractObj);
+        const makeWriteWithParams = () =>
+          writeContractAsync({
+            address: contractAddress,
+            functionName: abiFunction.name,
+            abi: abi,
+            args: getParsedContractFunctionArgs(form),
+            value: BigInt(txValue),
+          });
         await writeTxn(makeWriteWithParams);
         onChange();
       } catch (e: any) {

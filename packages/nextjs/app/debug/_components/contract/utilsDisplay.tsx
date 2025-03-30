@@ -30,7 +30,7 @@ export const displayTxResult = (
 
   if (typeof displayContent === "string") {
     if (isAddress(displayContent)) {
-      return <Address address={displayContent} size={fontSize} onlyEnsOrAddress />;
+      return <Address address={displayContent} size={fontSize} />;
     }
 
     if (isHex(displayContent)) {
@@ -85,7 +85,7 @@ export const ObjectFieldDisplay = ({
 }) => {
   return (
     <div className={`flex flex-row items-baseline ${leftPad ? "ml-4" : ""}`}>
-      <span className="text-base-content/60 mr-2">{name}:</span>
+      <span className="text-gray-500 dark:text-gray-400 mr-2">{name}:</span>
       <span className="text-base-content">{displayTxResult(value, size)}</span>
     </div>
   );

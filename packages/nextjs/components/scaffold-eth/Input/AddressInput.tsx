@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { blo } from "blo";
 import { useDebounceValue } from "usehooks-ts";
 import { Address, isAddress } from "viem";
@@ -48,7 +48,7 @@ export const AddressInput = ({ value, name, placeholder, onChange, disabled }: C
     },
   });
 
-  const { data: ensAvatar, isLoading: isEnsAvatarLoading } = useEnsAvatar({
+  const { data: ensAvatar, isLoading: isEnsAvtarLoading } = useEnsAvatar({
     name: ensName ? normalize(ensName) : undefined,
     chainId: 1,
     query: {
@@ -66,9 +66,13 @@ export const AddressInput = ({ value, name, placeholder, onChange, disabled }: C
     onChange(ensAddress);
   }, [ensAddress, onChange, debouncedValue]);
 
-  useEffect(() => {
-    setEnteredEnsName(undefined);
-  }, [value]);
+  const handleChange = useCallback(
+    (newValue: Address) => {
+      setEnteredEnsName(undefined);
+      onChange(newValue);
+    },
+    [onChange],
+  );
 
   const reFocus =
     isEnsAddressError ||
@@ -84,13 +88,13 @@ export const AddressInput = ({ value, name, placeholder, onChange, disabled }: C
       placeholder={placeholder}
       error={ensAddress === null}
       value={value as Address}
-      onChange={onChange}
+      onChange={handleChange}
       disabled={isEnsAddressLoading || isEnsNameLoading || disabled}
       reFocus={reFocus}
       prefix={
         ensName ? (
           <div className="flex bg-base-300 rounded-l-full items-center">
-            {isEnsAvatarLoading && <div className="skeleton bg-base-200 w-[35px] h-[35px] rounded-full shrink-0"></div>}
+            {isEnsAvtarLoading && <div className="skeleton bg-base-200 w-[35px] h-[35px] rounded-full shrink-0"></div>}
             {ensAvatar ? (
               <span className="w-[35px]">
                 {
