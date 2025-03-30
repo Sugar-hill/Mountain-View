@@ -25,19 +25,25 @@ const wallets = [
     : []),
 ];
 
+type CoinbaseWalletOptions = Parameters<typeof coinbaseWallet>[0];
+const coinbaseSmartWalletOnly = (params: CoinbaseWalletOptions) => coinbaseWallet(params);
+coinbaseSmartWalletOnly.preference = "smartWalletOnly";
+
+const supportedWalletGroup = { groupName: "Supported Wallets", wallets };
+// Show the Smart Wallets group only if Base Sepolia || Base is present in the targetNetworks
+const rainbowGroups = (targetNetworks as unknown as chains.Chain[]).some(
+  network => network.id === chains.baseSepolia.id || network.id === chains.base.id,
+)
+  ? [
+      { groupName: "Smart Wallets", wallets: [coinbaseSmartWalletOnly] },
+      { groupName: "others", wallets },
+    ]
+  : [supportedWalletGroup];
+
 /**
  * wagmi connectors for the wagmi context
  */
-export const wagmiConnectors = connectorsForWallets(
-  [
-    {
-      groupName: "Supported Wallets",
-      wallets,
-    },
-  ],
-
-  {
-    appName: "scaffold-eth-2",
-    projectId: scaffoldConfig.walletConnectProjectId,
-  },
-);
+export const wagmiConnectors = connectorsForWallets(rainbowGroups, {
+  appName: "scaffold-eth-2",
+  projectId: scaffoldConfig.walletConnectProjectId,
+});

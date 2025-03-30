@@ -1,6 +1,3 @@
-import { getParsedError } from "./getParsedError";
-import { AllowedChainIds } from "./networks";
-import { notification } from "./notification";
 import { MutateOptions } from "@tanstack/react-query";
 import {
   Abi,
@@ -24,8 +21,8 @@ import {
   TransactionReceipt,
   WriteContractErrorType,
 } from "viem";
-import { Config, UseReadContractParameters, UseWatchContractEventParameters, UseWriteContractParameters } from "wagmi";
-import { WriteContractParameters, WriteContractReturnType, simulateContract } from "wagmi/actions";
+import { Config, UseReadContractParameters, UseWatchContractEventParameters } from "wagmi";
+import { WriteContractParameters, WriteContractReturnType } from "wagmi/actions";
 import { WriteContractVariables } from "wagmi/query";
 import deployedContractsData from "~~/contracts/deployedContracts";
 import externalContractsData from "~~/contracts/externalContracts";
@@ -134,13 +131,13 @@ export type WriteAbiStateMutability = "nonpayable" | "payable";
 
 export type FunctionNamesWithInputs<
   TContractName extends ContractName,
-  TAbiStateMutability extends AbiStateMutability = AbiStateMutability,
+  TAbiStateMutibility extends AbiStateMutability = AbiStateMutability,
 > = Exclude<
   Extract<
     ContractAbi<TContractName>[number],
     {
       type: "function";
-      stateMutability: TAbiStateMutability;
+      stateMutability: TAbiStateMutibility;
     }
   >,
   {
@@ -152,7 +149,7 @@ type Expand<T> = T extends object ? (T extends infer O ? { [K in keyof O]: O[K] 
 
 type UnionToIntersection<U> = Expand<(U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never>;
 
-type OptionalTuple<T> = T extends readonly [infer H, ...infer R] ? readonly [H | undefined, ...OptionalTuple<R>] : T;
+type OptionalTupple<T> = T extends readonly [infer H, ...infer R] ? readonly [H | undefined, ...OptionalTupple<R>] : T;
 
 type UseScaffoldArgsParam<
   TContractName extends ContractName,
@@ -160,7 +157,7 @@ type UseScaffoldArgsParam<
 > =
   TFunctionName extends FunctionNamesWithInputs<TContractName>
     ? {
-        args: OptionalTuple<UnionToIntersection<AbiFunctionArguments<ContractAbi<TContractName>, TFunctionName>>>;
+        args: OptionalTupple<UnionToIntersection<AbiFunctionArguments<ContractAbi<TContractName>, TFunctionName>>>;
         value?: ExtractAbiFunction<ContractAbi<TContractName>, TFunctionName>["stateMutability"] extends "payable"
           ? bigint | undefined
           : undefined;
@@ -169,24 +166,11 @@ type UseScaffoldArgsParam<
         args?: never;
       };
 
-export type UseDeployedContractConfig<TContractName extends ContractName> = {
-  contractName: TContractName;
-  chainId?: AllowedChainIds;
-};
-
-export type UseScaffoldWriteConfig<TContractName extends ContractName> = {
-  contractName: TContractName;
-  chainId?: AllowedChainIds;
-  disableSimulate?: boolean;
-  writeContractParams?: UseWriteContractParameters;
-};
-
 export type UseScaffoldReadConfig<
   TContractName extends ContractName,
   TFunctionName extends ExtractAbiFunctionNames<ContractAbi<TContractName>, ReadAbiStateMutability>,
 > = {
   contractName: TContractName;
-  chainId?: AllowedChainIds;
   watch?: boolean;
 } & IsContractDeclarationMissing<
   Partial<UseReadContractParameters>,
@@ -232,7 +216,6 @@ export type UseScaffoldEventConfig<
 > = {
   contractName: TContractName;
   eventName: TEventName;
-  chainId?: AllowedChainIds;
 } & IsContractDeclarationMissing<
   Omit<UseWatchContractEventParameters, "onLogs" | "address" | "abi" | "eventName"> & {
     onLogs: (
@@ -292,7 +275,6 @@ export type UseScaffoldEventHistoryConfig<
   contractName: TContractName;
   eventName: IsContractDeclarationMissing<string, TEventName>;
   fromBlock: bigint;
-  chainId?: AllowedChainIds;
   filters?: EventFilters<TContractName, TEventName>;
   blockData?: TBlockData;
   transactionData?: TTransactionData;
@@ -315,6 +297,7 @@ export type UseScaffoldEventHistoryData<
   | IsContractDeclarationMissing<
       any[],
       {
+        log: Log<bigint, number, false, TEvent, false, [TEvent], TEventName>;
         args: AbiParametersToPrimitiveTypes<TEvent["inputs"]> &
           GetEventArgs<
             ContractAbi<TContractName>,
@@ -323,27 +306,11 @@ export type UseScaffoldEventHistoryData<
               IndexedOnly: false;
             }
           >;
-        blockData: TBlockData extends true ? Block<bigint, true> : null;
-        receiptData: TReceiptData extends true ? GetTransactionReturnType : null;
-        transactionData: TTransactionData extends true ? GetTransactionReceiptReturnType : null;
-      } & Log<bigint, number, false, TEvent, false, [TEvent], TEventName>[]
+        block: TBlockData extends true ? Block<bigint, true> : null;
+        receipt: TReceiptData extends true ? GetTransactionReturnType : null;
+        transaction: TTransactionData extends true ? GetTransactionReceiptReturnType : null;
+      }[]
     >
   | undefined;
 
 export type AbiParameterTuple = Extract<AbiParameter, { type: "tuple" | `tuple[${string}]` }>;
-
-export const simulateContractWriteAndNotifyError = async ({
-  wagmiConfig,
-  writeContractParams: params,
-}: {
-  wagmiConfig: Config;
-  writeContractParams: WriteContractVariables<Abi, string, any[], Config, number>;
-}) => {
-  try {
-    await simulateContract(wagmiConfig, params);
-  } catch (error) {
-    const parsedError = getParsedError(error);
-    notification.error(parsedError);
-    throw error;
-  }
-};
